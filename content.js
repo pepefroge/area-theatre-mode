@@ -36,6 +36,11 @@
   }
 
   function resetZoom(clearMemory = false) {
+    // Exit browser fullscreen if currently active
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
     const html = document.documentElement;
     html.style.transform = "";
     html.style.transformOrigin = "";
@@ -185,7 +190,7 @@
         b.getBoundingClientRect().width * b.getBoundingClientRect().height -
         a.getBoundingClientRect().width * a.getBoundingClientRect().height
     );
-    return videos[0] || null;
+    return videos || null;
   }
 
   function attachVideoFromRatio(videoEl, ratioObj) {
@@ -199,6 +204,14 @@
     };
     setupVideoTarget(targetVideo, reconstructedClientRect);
   }
+  function toggleTrueFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
   function startStreamWatchdog() {
     if (state.watchdogInterval) clearInterval(state.watchdogInterval);
 
@@ -273,7 +286,6 @@
       resTag.textContent = `${targetVideo.videoHeight}p`;
     }
   }
-
   function createFloatingHud() {
     if (document.getElementById("area-theatre-hud")) return;
 
@@ -388,7 +400,7 @@
     }
 
     const redrawBtn = document.createElement("button");
-    redrawBtn.textContent = "⛶";
+    redrawBtn.textContent = "✂";
     redrawBtn.title = "Select New Area (Shift+R)";
     Object.assign(redrawBtn.style, {
       background: "none",
@@ -398,9 +410,20 @@
       fontSize: "13px",
       padding: "0 2px"
     });
-    redrawBtn.addEventListener("click", () => {
-      resetZoom(true);
+    redrawBtn.addEventListener("click", () => resetZoom(true));
+
+    const fsBtn = document.createElement("button");
+    fsBtn.textContent = "⛶";
+    fsBtn.title = "Toggle Monitor Fullscreen (F)";
+    Object.assign(fsBtn.style, {
+      background: "none",
+      border: "none",
+      color: "#00ffcc",
+      cursor: "pointer",
+      fontSize: "14px",
+      padding: "0 2px"
     });
+    fsBtn.addEventListener("click", toggleTrueFullscreen);
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "✕";
@@ -416,9 +439,10 @@
     });
     closeBtn.addEventListener("click", () => resetZoom(false));
 
-    hud.append(redrawBtn, closeBtn);
+    hud.append(redrawBtn, fsBtn, closeBtn);
     document.body.appendChild(hud);
   }
+
   if (state.lastCropRatio) {
     if (state.lastCropRatio.isVideo) {
       const existingVideo = findPrimaryVideo();
@@ -688,7 +712,6 @@
       handle.style.right = pos.includes("e") ? `${offset}px` : "auto";
     });
   }
-
   function enablePanningAndWheelZoom(mask) {
     mask.addEventListener(
       "wheel",
@@ -842,6 +865,8 @@
       resetZoom(false);
     } else if (e.key === "R" && e.shiftKey) {
       resetZoom(true);
+    } else if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      toggleTrueFullscreen();
     }
   }
 })();
