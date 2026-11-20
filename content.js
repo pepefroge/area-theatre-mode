@@ -185,7 +185,7 @@
         b.getBoundingClientRect().width * b.getBoundingClientRect().height -
         a.getBoundingClientRect().width * a.getBoundingClientRect().height
     );
-    return videos || null;
+    return videos[0] || null;
   }
 
   function attachVideoFromRatio(videoEl, ratioObj) {
