@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Area Theatre Mode",
+  "version": "1.2",
+  "description": "Select an area of the webpage to expand it to fit the window with adjustable crop handles.",
+  "permissions": ["activeTab", "scripting"],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Select Area to Expand (Alt+Z)",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Z",
+        "mac": "Alt+Z"
+      },
+      "description": "Trigger Area Theatre Mode"
+    }
+  }
+}
