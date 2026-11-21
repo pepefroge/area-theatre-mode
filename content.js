@@ -36,7 +36,6 @@
   }
 
   function resetZoom(clearMemory = false) {
-    // Exit browser fullscreen if currently active
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
@@ -54,7 +53,7 @@
       state.originalNextSibling
     );
 
-    ["area-theatre-mask", "area-theatre-backdrop", "area-theatre-hud"].forEach((id) => {
+    ["area-theatre-mask", "area-theatre-backdrop", "area-theatre-hud", "area-theatre-overlay"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.remove();
     });
@@ -92,15 +91,13 @@
     return;
   }
 
-  let {
-    savedRect,
-    currentScale,
-    targetVideo,
-    originalVideoStyles,
-    originalVideoRect,
-    originalParent,
-    originalNextSibling
-  } = state;
+  let savedRect = null;
+  let currentScale = 1;
+  let targetVideo = null;
+  let originalVideoStyles = null;
+  let originalVideoRect = null;
+  let originalParent = null;
+  let originalNextSibling = null;
 
   function getActualVideoMetrics(videoEl) {
     const vRect = videoEl.getBoundingClientRect();
@@ -128,6 +125,7 @@
   function setupVideoTarget(videoEl, clientRect) {
     const { vRect, actualW, actualH, offsetX, offsetY } = getActualVideoMetrics(videoEl);
 
+    targetVideo = videoEl;
     originalVideoRect = { width: actualW, height: actualH };
     originalParent = videoEl.parentNode;
     originalNextSibling = videoEl.nextSibling;
@@ -190,11 +188,10 @@
         b.getBoundingClientRect().width * b.getBoundingClientRect().height -
         a.getBoundingClientRect().width * a.getBoundingClientRect().height
     );
-    return videos || null;
+    return videos[0] || null;
   }
 
   function attachVideoFromRatio(videoEl, ratioObj) {
-    targetVideo = videoEl;
     const { vRect, actualW, actualH, offsetX, offsetY } = getActualVideoMetrics(videoEl);
     const reconstructedClientRect = {
       left: vRect.left + offsetX + ratioObj.leftRatio * actualW,
@@ -202,7 +199,7 @@
       width: ratioObj.widthRatio * actualW,
       height: ratioObj.heightRatio * actualH
     };
-    setupVideoTarget(targetVideo, reconstructedClientRect);
+    setupVideoTarget(videoEl, reconstructedClientRect);
   }
   function toggleTrueFullscreen() {
     if (!document.fullscreenElement) {
@@ -222,7 +219,8 @@
         !targetVideo ||
         !document.body.contains(targetVideo) ||
         targetVideo.readyState === 0 ||
-        targetVideo.videoWidth === 0;
+        targetVideo.videoWidth === 0 ||
+        targetVideo.ended;
 
       const replacementVideo = findPrimaryVideo(targetVideo);
 
@@ -286,6 +284,7 @@
       resTag.textContent = `${targetVideo.videoHeight}p`;
     }
   }
+
   function createFloatingHud() {
     if (document.getElementById("area-theatre-hud")) return;
 
@@ -442,7 +441,6 @@
     hud.append(redrawBtn, fsBtn, closeBtn);
     document.body.appendChild(hud);
   }
-
   if (state.lastCropRatio) {
     if (state.lastCropRatio.isVideo) {
       const existingVideo = findPrimaryVideo();
@@ -538,7 +536,7 @@
     const centerY = rect.top + rect.height / 2;
     const videos = Array.from(document.querySelectorAll("video"));
 
-    targetVideo = videos.find((v) => {
+    const foundVideo = videos.find((v) => {
       const vRect = v.getBoundingClientRect();
       return (
         vRect.width > 0 &&
@@ -549,8 +547,8 @@
       );
     });
 
-    if (targetVideo) {
-      setupVideoTarget(targetVideo, rect);
+    if (foundVideo) {
+      setupVideoTarget(foundVideo, rect);
     } else {
       savedRect = {
         left: rect.left + window.scrollX,
@@ -567,6 +565,7 @@
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", handleResize);
   });
+
   function applyTheatreMode() {
     if (!savedRect) return;
 
@@ -672,7 +671,6 @@
       resizeHandler: handleResize
     });
   }
-
   function updateBlackoutMask(rect, isFixedViewport) {
     let mask = document.getElementById("area-theatre-mask");
     if (!mask) {
@@ -712,6 +710,7 @@
       handle.style.right = pos.includes("e") ? `${offset}px` : "auto";
     });
   }
+
   function enablePanningAndWheelZoom(mask) {
     mask.addEventListener(
       "wheel",
